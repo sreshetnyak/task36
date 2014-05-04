@@ -17,7 +17,9 @@ static NSString* kSettingsGender = @"kSettingsGender";
 static NSString* kSettingsEducation = @"kSettingsEducation";
 static NSString* kSettingsAge = @"kSettingsAge";
 
-@interface TTViewController () <TTPopOverDelegate,UITextFieldDelegate,TTDatePickDelegete,TTEducationDelegete>
+@interface TTViewController () <TTPopOverDelegate,UITextFieldDelegate,TTDatePickDelegete,TTEducationDelegete,UIPopoverControllerDelegate>
+
+@property (strong,nonatomic) UIPopoverController *pop;
 
 @end
 
@@ -90,6 +92,16 @@ static NSString* kSettingsAge = @"kSettingsAge";
         UINavigationController *nv = [[UINavigationController alloc]initWithRootViewController:vc];
         
         [self presentViewController:nv animated:YES completion:nil];
+        
+    } else {
+        
+        TTInfoPopoverViewController *vc = [[TTInfoPopoverViewController alloc]init];
+        UIPopoverController *pop = [[UIPopoverController alloc]initWithContentViewController:vc];
+        
+        [pop presentPopoverFromBarButtonItem:sender permittedArrowDirections:UIPopoverArrowDirectionUp animated:YES];
+        
+        self.pop = pop;
+        
     }
     
 }
@@ -109,7 +121,15 @@ static NSString* kSettingsAge = @"kSettingsAge";
     
     [self saveSettingsAgeWithDate:date];
     
-    [self dismissViewControllerAnimated:YES completion:nil];
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
+        
+        [self dismissViewControllerAnimated:YES completion:nil];
+    } else {
+        
+        [self.pop dismissPopoverAnimated:YES];
+        self.pop = nil;
+    }
+    
 }
 
 - (void)educationPickDidEndEditing:(NSString *)education {
@@ -118,7 +138,14 @@ static NSString* kSettingsAge = @"kSettingsAge";
     
     [self saveSettings];
     
-    [self dismissViewControllerAnimated:YES completion:nil];
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
+        
+        [self dismissViewControllerAnimated:YES completion:nil];
+    } else {
+        
+        [self.pop dismissPopoverAnimated:YES];
+        self.pop = nil;
+    }
 }
 
 #pragma mark - UITextFieldDelegate
@@ -153,10 +180,28 @@ static NSString* kSettingsAge = @"kSettingsAge";
             UINavigationController *nv = [[UINavigationController alloc]initWithRootViewController:vc];
             
             [self presentViewController:nv animated:YES completion:nil];
+        } else {
+            
+            TTDateViewController *vc = [[TTDateViewController alloc]init];
+            
+            vc.delegate = self;
+            
+            NSUserDefaults* userDefaults = [NSUserDefaults standardUserDefaults];
+            NSDate *dateBirth = [userDefaults objectForKey:kSettingsAge];
+            vc.date = dateBirth;
+            
+            UINavigationController *nv = [[UINavigationController alloc]initWithRootViewController:vc];
+            
+            UIPopoverController *pop = [[UIPopoverController alloc]initWithContentViewController:nv];
+            pop.delegate = self;
+            pop.popoverContentSize = CGSizeMake(300, 300);
+            
+            [pop presentPopoverFromRect:textField.bounds inView:textField permittedArrowDirections:UIPopoverArrowDirectionUp animated:YES];
+            
+            self.pop = pop;
         }
         
     } else if (textField.tag == 4) {
-        
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
             
             TTEducationViewController *vc = [[TTEducationViewController alloc]init];
@@ -165,11 +210,54 @@ static NSString* kSettingsAge = @"kSettingsAge";
             UINavigationController *nv = [[UINavigationController alloc]initWithRootViewController:vc];
             
             [self presentViewController:nv animated:YES completion:nil];
+        } else {
+            
+            TTEducationViewController *vc = [[TTEducationViewController alloc]init];
+            
+            vc.delegete = self;
+            
+            NSUserDefaults* userDefaults = [NSUserDefaults standardUserDefaults];
+            NSString *education = [userDefaults objectForKey:kSettingsEducation];
+            vc.education = education;
+            
+            UINavigationController *nv = [[UINavigationController alloc]initWithRootViewController:vc];
+            
+            UIPopoverController *pop = [[UIPopoverController alloc]initWithContentViewController:nv];
+            pop.delegate = self;
+            pop.popoverContentSize = CGSizeMake(300, 300);
+            
+            [pop presentPopoverFromRect:textField.bounds inView:textField permittedArrowDirections:UIPopoverArrowDirectionUp animated:YES];
+            
+            self.pop = pop;
+
         }
         
     }
     
     return NO;
+}
+
+- (void)popoverControllerDidDismissPopover:(UIPopoverController *)popoverController {
+    
+    if ([[popoverController.contentViewController.childViewControllers firstObject] isKindOfClass:[TTDateViewController class]]) {
+        
+        NSDateFormatter *dateFormater = [[NSDateFormatter alloc]init];
+        [dateFormater setDateFormat:@"dd MMM yyyy"];
+        
+        self.dateTextField.text = [dateFormater stringFromDate:[[popoverController.contentViewController.childViewControllers firstObject] date]];
+        
+        [self saveSettingsAgeWithDate:[[popoverController.contentViewController.childViewControllers firstObject] date]];
+        
+        self.pop = nil;
+
+    } else if ([[popoverController.contentViewController.childViewControllers firstObject] isKindOfClass:[TTEducationViewController class]]) {
+        
+        self.educationField.text = [[popoverController.contentViewController.childViewControllers firstObject] education];
+        
+        [self saveSettings];
+        
+        self.pop = nil;
+    }
 }
 
 @end

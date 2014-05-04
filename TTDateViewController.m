@@ -24,16 +24,41 @@
     UIBarButtonItem *item = [[UIBarButtonItem alloc]initWithBarButtonSystemItem:UIBarButtonSystemItemCancel target:self action:@selector(cancelPressed:)];
     self.navigationItem.leftBarButtonItem = item;
     
-    CGRect rect = self.view.bounds;
-    rect.origin.y = 44;
+    CGRect rect;
+    
+    
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
+        
+        rect = self.view.bounds;
+        
+        rect.origin = CGPointZero;
+        
+        rect.origin.y = 44;
+        
+    } else {
+        self.view.bounds = CGRectMake(0, 0, 300, 300);
+        rect = self.view.bounds;
+        rect.origin = CGPointZero;
+    }
+    
     
     UIDatePicker *datePicker = [[UIDatePicker alloc]initWithFrame:rect];
-    [datePicker setDate:self.date];
+    
+    [datePicker addTarget:self action:@selector(setNewDate:) forControlEvents:UIControlEventValueChanged];
+    
+    if (self.date != nil) {
+        [datePicker setDate:self.date];
+    }
+    
     datePicker.datePickerMode = UIDatePickerModeDate;
     self.datePicker = datePicker;
     
     [self.view addSubview:datePicker];
     
+}
+
+- (void)setNewDate:(UIPickerView *)picker {
+    self.date = self.datePicker.date;
 }
 
 - (void)cancelPressed:(id)sender {
